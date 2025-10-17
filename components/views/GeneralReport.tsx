@@ -8,10 +8,13 @@ interface GeneralReportProps {
 
 type Period = 'week' | 'month' | 'year';
 
-const StatCard: React.FC<{ title: string; value: string; }> = ({ title, value }) => (
-    <div className="bg-night-900/50 border border-night-700/70 p-3 rounded-lg text-center">
-        <p className="text-xs text-gray-400">{title}</p>
-        <p className="text-lg font-bold text-white">{value}</p>
+// --- UI COMPONENTS ---
+
+const StatCard: React.FC<{ title: string; value: string; subvalue?: string }> = ({ title, value, subvalue }) => (
+    <div className="bg-night-900/50 border border-night-700/70 p-4 rounded-lg text-center h-full flex flex-col justify-center">
+        <p className="text-sm text-gray-400">{title}</p>
+        <p className="text-2xl font-bold text-white">{value}</p>
+        {subvalue && <p className="text-xs text-gray-500">{subvalue}</p>}
     </div>
 );
 
@@ -21,16 +24,19 @@ const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload
         return (
             <div className="bg-night-900/80 backdrop-blur-sm p-3 rounded-lg border border-night-600 shadow-lg text-sm">
                 <p className="font-bold text-white mb-1">{label}</p>
-                <p className="text-base font-semibold text-green-400">
-                    {`Lucro: ${formatCurrency(payload[0].value as number)}`}
-                </p>
+                {payload.map((p, i) => (
+                     <p key={i} className="font-semibold" style={{ color: p.color }}>
+                        {`${p.name}: ${formatCurrency(p.value as number)}`}
+                    </p>
+                ))}
             </div>
         );
     }
     return null;
 };
 
-// --- HELPERS ---
+// --- HELPER FUNCTIONS ---
+
 const getWeekKey = (date: Date): string => {
     const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
     const dayNum = d.getUTCDay() || 7;
@@ -49,123 +55,107 @@ const getMonthKey = (date: Date): string => {
 const getYearKey = (date: Date): string => {
     return date.getFullYear().toString();
 }
-// --- END HELPERS ---
+
+const formatCurrency = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+// --- MAIN COMPONENT ---
 
 const GeneralReport: React.FC<GeneralReportProps> = ({ store }) => {
-    const [period, setPeriod] = useState<Period>('week');
+    const [period, setPeriod] = useState<Period>('month');
 
-    const { chartData, summaryStats } = useMemo(() => {
+    const periodData = useMemo(() => {
         const { entries, vehicleCostPerKm } = store;
-        if (entries.length === 0) return { chartData: [], summaryStats: { total: 0, average: 0, periods: 0 } };
+        if (entries.length === 0) return { chartData: [], summaryStats: { totalProfit: 0, avgProfitPerDay: 0, daysWorked: 0, bestDay: { profit: 0, date: '' } } };
 
-        const aggregator = new Map<string, { totalProfit: number; count: number }>();
+        const aggregator = new Map<string, { totalProfit: number; days: Set<string>; }>();
+        const getGroupKey = (d: Date) => (period === 'week' ? getWeekKey(d) : period === 'month' ? getMonthKey(d) : getYearKey(d));
 
-        const getGroupKey = (date: Date) => {
-            switch (period) {
-                case 'week': return getWeekKey(date);
-                case 'month': return getMonthKey(date);
-                case 'year': return getYearKey(date);
-            }
-        };
+        let overallBestDay = { profit: -Infinity, date: '' };
 
         entries.forEach(entry => {
             const date = new Date(entry.date);
-            // Ensure date is valid before processing
             if (isNaN(date.getTime())) return;
 
             const key = getGroupKey(date);
             const netProfit = entry.totalEarnings - (entry.kmDriven * vehicleCostPerKm) - entry.additionalCosts;
 
-            const current = aggregator.get(key) || { totalProfit: 0, count: 0 };
+            if (netProfit > overallBestDay.profit) {
+                overallBestDay = { profit: netProfit, date: entry.date };
+            }
+
+            const current = aggregator.get(key) || { totalProfit: 0, days: new Set() };
             current.totalProfit += netProfit;
-            current.count += 1;
+            current.days.add(entry.date);
             aggregator.set(key, current);
         });
 
         const sortedKeys = Array.from(aggregator.keys()).sort();
-        const processedChartData = sortedKeys.map(key => {
+        const chartData = sortedKeys.map(key => {
             const data = aggregator.get(key)!;
             let name = key;
             if (period === 'week') {
-                const [year, week] = key.split('-S');
-                name = `Sem ${week}/${year.slice(-2)}`;
+                const [year, week] = key.split('-S'); name = `Sem ${week}/${year.slice(-2)}`;
+            } else if (period === 'month') {
+                const [y, m] = key.split('-'); name = `${new Date(+y, +m - 1).toLocaleString('pt-BR', { month: 'short' })}/${y.slice(-2)}`;
             }
-            if (period === 'month') {
-                const [year, month] = key.split('-');
-                name = `${new Date(parseInt(year), parseInt(month) - 1).toLocaleString('pt-BR', { month: 'short' })}/${year.slice(-2)}`;
-            }
-            return {
-                name,
-                Lucro: parseFloat(data.totalProfit.toFixed(2)),
-            };
+            return { name, Lucro: parseFloat(data.totalProfit.toFixed(2)) };
         });
         
         const totalProfitAllTime = Array.from(aggregator.values()).reduce((acc, curr) => acc + curr.totalProfit, 0);
-        const totalDays = Array.from(aggregator.values()).reduce((acc, curr) => acc + curr.count, 0);
+        const totalDays = entries.length;
         
-        const processedSummaryStats = {
-            total: totalProfitAllTime,
-            average: totalDays > 0 ? totalProfitAllTime / totalDays : 0,
-            periods: aggregator.size,
+        return { 
+            chartData, 
+            summaryStats: {
+                totalProfit: totalProfitAllTime,
+                avgProfitPerDay: totalDays > 0 ? totalProfitAllTime / totalDays : 0,
+                daysWorked: totalDays,
+                bestDay: overallBestDay,
+            }
         };
-
-        return { chartData: processedChartData, summaryStats: processedSummaryStats };
     }, [store.entries, store.vehicleCostPerKm, period]);
 
-    const formatCurrency = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const tabs: { id: Period, label: string }[] = [{ id: 'week', label: 'Semanal' }, { id: 'month', label: 'Mensal' }, { id: 'year', label: 'Anual' }];
 
-    const tabs: { id: Period, label: string }[] = [
-        { id: 'week', label: 'Semanal' },
-        { id: 'month', label: 'Mensal' },
-        { id: 'year', label: 'Anual' },
-    ];
-
-    if (store.entries.length === 0) {
-        return <p className="text-center text-gray-400 py-4">Não há dados suficientes no histórico para gerar um relatório.</p>;
+    if (store.entries.length < 3) {
+        return <p className="text-center text-gray-400 py-4">É necessário ter pelo menos 3 registros para gerar um relatório detalhado.</p>;
     }
 
     return (
-        <div className="space-y-4">
-            <div className="flex justify-center bg-night-900/60 p-1 rounded-full">
-                {tabs.map(tab => (
-                    <button
-                        key={tab.id}
-                        onClick={() => setPeriod(tab.id)}
-                        className={`w-full py-2 px-3 text-sm font-semibold rounded-full transition-colors ${
-                            period === tab.id ? 'bg-brand-green text-white' : 'text-gray-300 hover:bg-night-700/50'
-                        }`}
-                    >
-                        {tab.label}
-                    </button>
-                ))}
-            </div>
-
-            <div className="grid grid-cols-3 gap-2">
-                <StatCard title="Lucro Total" value={formatCurrency(summaryStats.total)} />
-                <StatCard title="Média / Dia" value={formatCurrency(summaryStats.average)} />
-                <StatCard title="Nº de Períodos" value={summaryStats.periods.toString()} />
-            </div>
-
-            {chartData.length > 0 ? (
-                 <div className="w-full h-52 mt-4">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={chartData} margin={{ top: 5, right: 20, left: -15, bottom: 5 }}>
-                             <defs>
-                                <linearGradient id="colorLucro" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#10B981" stopOpacity={0.7}/>
-                                    <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
-                                </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#4B5563" strokeOpacity={0.3} />
-                            <XAxis dataKey="name" stroke="#9CA3AF" fontSize={11} tickLine={false} axisLine={false} />
-                            <YAxis stroke="#9CA3AF" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(value) => `R$${value}`} />
-                            <Tooltip content={<CustomTooltip />} />
-                            <Area type="monotone" dataKey="Lucro" stroke="#10B981" fillOpacity={1} fill="url(#colorLucro)" strokeWidth={2} />
-                        </AreaChart>
-                    </ResponsiveContainer>
+        <div className="space-y-6">
+            <div>
+                 <h3 className="text-lg font-semibold text-white mb-3 text-center">Visão Geral do Período</h3>
+                <div className="flex justify-center bg-night-900/60 p-1 rounded-full mb-4">
+                    {tabs.map(tab => (
+                        <button key={tab.id} onClick={() => setPeriod(tab.id)} className={`w-full py-2 px-3 text-sm font-semibold rounded-full transition-colors ${ period === tab.id ? 'bg-brand-green text-white shadow' : 'text-gray-300 hover:bg-night-700/50' }`}>
+                            {tab.label}
+                        </button>
+                    ))}
                 </div>
-            ) : (
-                <p className="text-center text-gray-400 py-8">Não há dados para o período selecionado.</p>
+                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <StatCard title="Lucro Total" value={formatCurrency(periodData.summaryStats.totalProfit)} />
+                    <StatCard title="Média Lucro/Dia" value={formatCurrency(periodData.summaryStats.avgProfitPerDay)} />
+                    <StatCard title="Dias Trabalhados" value={periodData.summaryStats.daysWorked.toString()} />
+                    <StatCard title="Melhor Dia (Lucro)" value={formatCurrency(periodData.summaryStats.bestDay.profit)} subvalue={new Date(periodData.summaryStats.bestDay.date).toLocaleDateString('pt-BR')}/>
+                </div>
+            </div>
+
+            {periodData.chartData.length > 0 && (
+                 <div className="bg-night-900/50 border border-night-700/70 p-4 rounded-lg">
+                     <h3 className="text-lg font-semibold text-white mb-4 text-center">Tendência de Lucro</h3>
+                     <div className="w-full h-52">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={periodData.chartData} margin={{ top: 5, right: 20, left: -15, bottom: 5 }}>
+                                 <defs><linearGradient id="colorLucro" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#10B981" stopOpacity={0.7}/><stop offset="95%" stopColor="#10B981" stopOpacity={0}/></linearGradient></defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#4B5563" strokeOpacity={0.3} />
+                                <XAxis dataKey="name" stroke="#9CA3AF" fontSize={11} tickLine={false} axisLine={false} />
+                                <YAxis stroke="#9CA3AF" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `R$${v}`} />
+                                <Tooltip content={<CustomTooltip />} />
+                                <Area type="monotone" dataKey="Lucro" stroke="#10B981" fillOpacity={1} fill="url(#colorLucro)" strokeWidth={2} />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
+                 </div>
             )}
         </div>
     );

@@ -41,11 +41,10 @@ export const useGanhosProStore = (): GanhosProStore => {
         }
     }, [vehicleCostPerKm]);
 
-    const addEntry = useCallback((newEntryData: Omit<Entry, 'id' | 'date'>) => {
+    const addEntry = useCallback((newEntryData: Omit<Entry, 'id'>) => {
         const newEntry: Entry = {
             ...newEntryData,
             id: new Date().toISOString(),
-            date: new Date().toISOString().split('T')[0],
         };
         setEntries(prevEntries => [...prevEntries, newEntry].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     }, []);
@@ -58,6 +57,15 @@ export const useGanhosProStore = (): GanhosProStore => {
 
     const deleteEntry = useCallback((id: string) => {
         setEntries(prevEntries => prevEntries.filter(entry => entry.id !== id));
+    }, []);
+
+    const deleteOldEntries = useCallback((cutoffDate: Date) => {
+        setEntries(prevEntries => prevEntries.filter(entry => {
+             // Adjust for timezone issues where 'YYYY-MM-DD' might be interpreted as midnight UTC
+            const entryDate = new Date(entry.date);
+            const entryDateWithoutTime = new Date(entryDate.getUTCFullYear(), entryDate.getUTCMonth(), entryDate.getUTCDate());
+            return entryDateWithoutTime >= cutoffDate;
+        }));
     }, []);
 
     const setVehicleCostPerKm = useCallback((cost: number) => {
@@ -84,6 +92,7 @@ export const useGanhosProStore = (): GanhosProStore => {
         addEntry,
         updateEntry,
         deleteEntry,
+        deleteOldEntries,
         setVehicleCostPerKm,
         replaceAllEntries,
     };

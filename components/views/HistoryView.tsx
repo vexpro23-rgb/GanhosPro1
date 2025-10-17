@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, TooltipProps } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, TooltipProps, Cell } from 'recharts';
 import type { GanhosProStore, Entry } from '../../types.ts';
 import { TrashIcon, PencilIcon } from '../Icons.tsx';
 
@@ -21,6 +21,7 @@ const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload
                     {`Lucro: ${formatCurrency(data.Lucro)}`}
                 </p>
                 <hr className="border-night-700 my-1" />
+                <p className="text-gray-300">{`Ganhos Brutos: ${formatCurrency(data['Ganhos Brutos'])}`}</p>
                 <p className="text-yellow-400">{`Custo Carro: ${formatCurrency(data['Custo do Carro'])}`}</p>
                 <p className="text-gray-400">{`Custos Extras: ${formatCurrency(data['Custos Extras'])}`}</p>
             </div>
@@ -50,6 +51,8 @@ const SummaryModal: React.FC<{
     const netProfit = entry.totalEarnings - carCost - entry.additionalCosts;
     const profitPerKm = entry.kmDriven > 0 ? netProfit / entry.kmDriven : 0;
     const profitPerHour = entry.hoursWorked > 0 ? netProfit / entry.hoursWorked : null;
+    const grossProfitPerKm = entry.kmDriven > 0 ? entry.totalEarnings / entry.kmDriven : 0;
+
 
     const formatCurrency = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -81,6 +84,7 @@ const SummaryModal: React.FC<{
                     <StatCard title="Lucro por KM" value={`${formatCurrency(profitPerKm)}/km`} />
                     {profitPerHour !== null && <StatCard title="Lucro por Hora" value={`${formatCurrency(profitPerHour)}/h`} />}
                     <StatCard title="Ganhos Brutos" value={formatCurrency(entry.totalEarnings)} />
+                    <StatCard title="Ganho Bruto por KM" value={`${formatCurrency(grossProfitPerKm)}/km`} />
                     <StatCard title="Custo do Carro" value={formatCurrency(carCost)} color="text-yellow-400" />
                     <StatCard title="Custos Extras" value={formatCurrency(entry.additionalCosts)} color="text-orange-400" />
                 </div>
@@ -156,26 +160,30 @@ const HistoryView: React.FC<HistoryViewProps> = ({ store, showToast }) => {
     const [editingEntry, setEditingEntry] = useState<Entry | null>(null);
     const [viewingEntry, setViewingEntry] = useState<Entry | null>(null);
     
-    const recentEntries = useMemo(() => {
+    const entriesToDisplay = useMemo(() => {
         const fifteenDaysAgo = new Date();
-        fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
+        fifteenDaysAgo.setHours(0, 0, 0, 0);
+        fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 14);
         return entries
             .filter(e => new Date(e.date) >= fifteenDaysAgo)
-            .sort((a, b) => new Date(a.id).getTime() - new Date(b.id).getTime());
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     }, [entries]);
 
     const chartData = useMemo(() => {
-        return recentEntries.slice(-7).map(entry => {
+        const sourceEntries = entriesToDisplay.slice(-7);
+
+        return sourceEntries.map(entry => {
             const carCost = entry.kmDriven * vehicleCostPerKm;
             const netProfit = entry.totalEarnings - carCost - entry.additionalCosts;
             return {
                 name: new Date(entry.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
                 Lucro: parseFloat(netProfit.toFixed(2)),
+                'Ganhos Brutos': parseFloat(entry.totalEarnings.toFixed(2)),
                 'Custo do Carro': parseFloat(carCost.toFixed(2)),
                 'Custos Extras': parseFloat(entry.additionalCosts.toFixed(2)),
             };
         });
-    }, [recentEntries, vehicleCostPerKm]);
+    }, [entriesToDisplay, vehicleCostPerKm]);
     
     const handleSaveEdit = (updatedEntry: Entry) => {
         updateEntry(updatedEntry);
@@ -192,7 +200,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ store, showToast }) => {
         deleteEntry(id);
         setViewingEntry(null);
     };
-
+    
     const formatCurrency = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
     if (entries.length === 0) {
@@ -207,11 +215,15 @@ const HistoryView: React.FC<HistoryViewProps> = ({ store, showToast }) => {
     return (
         <>
             <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-white text-center">Histórico (Últimos 15 dias)</h2>
+                 <h2 className="text-2xl font-bold text-white text-center">
+                    Histórico Recente
+                </h2>
 
                 {chartData.length > 0 && (
                     <div className="bg-night-800/50 border border-night-700 p-4 rounded-lg shadow-xl">
-                        <h3 className="text-lg font-semibold text-white mb-4">Lucro Líquido (Últimos 7 dias)</h3>
+                        <h3 className="text-lg font-semibold text-white mb-4">
+                            Lucro Líquido (Últimos 7 dias)
+                        </h3>
                         <div style={{ width: '100%', height: 200 }}>
                             <ResponsiveContainer>
                                 <BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
@@ -222,48 +234,59 @@ const HistoryView: React.FC<HistoryViewProps> = ({ store, showToast }) => {
                                         cursor={{ fill: 'rgba(255, 255, 255, 0.1)' }}
                                         content={<CustomTooltip />}
                                     />
-                                    <Bar dataKey="Lucro" fill="#10B981" />
+                                    <Bar dataKey="Lucro">
+                                        {chartData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.Lucro >= 0 ? '#10B981' : '#F87171'} />
+                                        ))}
+                                    </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
                     </div>
                 )}
-
-                <div className="space-y-3">
-                    {recentEntries.slice().reverse().map(entry => {
-                        const carCost = entry.kmDriven * vehicleCostPerKm;
-                        const netProfit = entry.totalEarnings - carCost - entry.additionalCosts;
-                        
-                        return (
-                            <div 
-                                key={entry.id}
-                                className="bg-night-800/50 border border-night-700 p-4 rounded-lg shadow-md flex items-center justify-between hover:bg-night-700/70 transition-colors duration-200 cursor-pointer"
-                                onClick={() => setViewingEntry(entry)}
-                                role="button"
-                                tabIndex={0}
-                                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setViewingEntry(entry)}
-                            >
-                                <div>
-                                    <p className="font-bold text-white">{new Date(entry.date).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' })}</p>
-                                    <p className={`text-lg font-semibold ${netProfit > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                        {formatCurrency(netProfit)}
-                                    </p>
-                                    <p className="text-xs text-gray-400">
-                                        {entry.kmDriven} km • {formatCurrency(entry.totalEarnings)} brutos
-                                    </p>
+                
+                {entriesToDisplay.length > 0 ? (
+                    <div className="space-y-3">
+                        {entriesToDisplay.slice().reverse().map(entry => {
+                            const carCost = entry.kmDriven * vehicleCostPerKm;
+                            const netProfit = entry.totalEarnings - carCost - entry.additionalCosts;
+                            
+                            return (
+                                <div 
+                                    key={entry.id}
+                                    className="bg-night-800/50 border border-night-700 p-4 rounded-lg shadow-md flex items-center justify-between hover:bg-night-700/70 transition-colors duration-200 cursor-pointer"
+                                    onClick={() => setViewingEntry(entry)}
+                                    role="button"
+                                    tabIndex={0}
+                                    onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setViewingEntry(entry)}
+                                >
+                                    <div>
+                                        <p className="font-bold text-white">{new Date(entry.date).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' })}</p>
+                                        <p className={`text-lg font-semibold ${netProfit > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                            {formatCurrency(netProfit)}
+                                        </p>
+                                        <p className="text-xs text-gray-400">
+                                            {entry.kmDriven} km • {formatCurrency(entry.totalEarnings)} brutos
+                                        </p>
+                                    </div>
+                                    <div className="text-right">
+                                         <p className="text-xs text-gray-400">
+                                            Custo Carro: {formatCurrency(carCost)}
+                                        </p>
+                                        <p className="text-xs text-gray-400">
+                                            Extras: {formatCurrency(entry.additionalCosts)}
+                                        </p>
+                                    </div>
                                 </div>
-                                <div className="text-right">
-                                     <p className="text-xs text-gray-400">
-                                        Custo Carro: {formatCurrency(carCost)}
-                                    </p>
-                                    <p className="text-xs text-gray-400">
-                                        Extras: {formatCurrency(entry.additionalCosts)}
-                                    </p>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
+                            );
+                        })}
+                    </div>
+                 ) : (
+                    <div className="text-center text-gray-400 mt-6 bg-night-800/50 border border-night-700 p-6 rounded-lg">
+                        <h3 className="text-lg font-semibold mb-1">Nenhum Registro Recente</h3>
+                        <p className="text-sm">Não há dados para os últimos 15 dias. Registros mais antigos podem ser vistos exportando o histórico na tela Premium.</p>
+                    </div>
+                )}
             </div>
             
             {viewingEntry && <SummaryModal 

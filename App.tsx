@@ -61,7 +61,7 @@ const App: React.FC = () => {
                 </h1>
             </header>
             
-            <main className="flex-grow p-4 pb-24 overflow-y-auto">
+            <main key={currentView} className="flex-grow p-4 pb-24 overflow-y-auto animate-fade-in-up">
                 {renderView()}
             </main>
             

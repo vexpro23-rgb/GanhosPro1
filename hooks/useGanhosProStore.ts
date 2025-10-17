@@ -64,6 +64,20 @@ export const useGanhosProStore = (): GanhosProStore => {
         setVehicleCostPerKmState(cost);
     }, []);
 
+    const replaceAllEntries = useCallback((newEntries: Entry[]) => {
+        if (Array.isArray(newEntries)) {
+            // Basic validation to ensure all items have the required keys
+            const isValid = newEntries.every(item => 'id' in item && 'date' in item && 'totalEarnings' in item);
+            if (isValid) {
+                setEntries(newEntries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+            } else {
+                 console.error("Invalid data format for import.");
+                 alert("Formato de arquivo inválido. O arquivo de backup parece estar corrompido.");
+            }
+        }
+    }, []);
+
+
     return {
         entries,
         vehicleCostPerKm,
@@ -71,5 +85,6 @@ export const useGanhosProStore = (): GanhosProStore => {
         updateEntry,
         deleteEntry,
         setVehicleCostPerKm,
+        replaceAllEntries,
     };
 };

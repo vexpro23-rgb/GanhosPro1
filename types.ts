@@ -25,4 +25,5 @@ export interface GanhosProStore {
     updateEntry: (entry: Entry) => void;
     deleteEntry: (id: string) => void;
     setVehicleCostPerKm: (cost: number) => void;
+    replaceAllEntries: (newEntries: Entry[]) => void;
 }

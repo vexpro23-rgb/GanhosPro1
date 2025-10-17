@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/public/icon-512x512.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GanhosPro: Lucro do Motorista</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#10B981"/>
+
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="/public/icon-512x512.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="GanhosPro">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            'brand-green': '#10B981',
+            'brand-blue': '#3B82F6',
+            'night-900': '#111827',
+            'night-800': '#1F2937',
+            'night-700': '#374151',
+            'night-600': '#4B5563',
+          },
+          keyframes: {
+            'fade-in-up': {
+              '0%': {
+                opacity: '0',
+                transform: 'translateY(10px)'
+              },
+              '100%': {
+                opacity: '1',
+                transform: 'translateY(0)'
+              },
+            },
+            'bounce-in': {
+              '0%': {
+                opacity: '0',
+                transform: 'scale(0.8)'
+              },
+              '60%': {
+                opacity: '1',
+                transform: 'scale(1.05)'
+              },
+              '100%': {
+                transform: 'scale(1)'
+              }
+            }
+          },
+          animation: {
+            'fade-in-up': 'fade-in-up 0.5s ease-out forwards',
+            'bounce-in': 'bounce-in 0.5s ease-out forwards'
+          }
+        }
+      }
+    }
+    </script>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "recharts": "https://aistudiocdn.com/recharts@^3.2.1",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^0.15.0"
+  }
+}
+</script>
+</head>
+<body class="bg-night-900 font-sans">
+    <div id="root"></div>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+              console.log('ServiceWorker registration successful with scope: ', registration.scope);
+            })
+            .catch(error => {
+              console.log('ServiceWorker registration failed: ', error);
+            });
+        });
+      }
+    </script>
+</body>
+</html>

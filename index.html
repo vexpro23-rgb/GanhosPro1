@@ -79,9 +79,15 @@
   }
 }
 </script>
+    <!-- Adicionado Babel para transpilação de TSX/JSX no navegador -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body class="bg-night-900 font-sans">
     <div id="root"></div>
+
+    <!-- Adicionado para carregar o arquivo TSX principal com Babel -->
+    <script type="text/babel" data-type="module" src="/index.tsx"></script>
+
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {

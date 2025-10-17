@@ -12,10 +12,11 @@ const SettingsView: React.FC<SettingsViewProps> = ({ store, showToast }) => {
     const [cost, setCost] = useState(vehicleCostPerKm.toString());
 
     // State for the calculator
+    const [calcFuelPrice, setCalcFuelPrice] = useState('');
     const [calcFuel, setCalcFuel] = useState('');
     const [calcKms, setCalcKms] = useState('');
     const [calcExtras, setCalcExtras] = useState('0.20');
-    const [calcResult, setCalcResult] = useState<number | null>(null);
+    const [calcResult, setCalcResult] = useState<{ totalCost: number; consumption: number } | null>(null);
     
     const handleSave = () => {
         const newCost = parseFloat(cost.replace(',', '.'));
@@ -28,22 +29,27 @@ const SettingsView: React.FC<SettingsViewProps> = ({ store, showToast }) => {
     };
 
     const handleCalculate = () => {
-        const fuel = parseFloat(calcFuel.replace(',', '.'));
+        const price = parseFloat(calcFuelPrice.replace(',', '.'));
+        const total = parseFloat(calcFuel.replace(',', '.'));
         const kms = parseFloat(calcKms.replace(',', '.'));
         const extras = parseFloat(calcExtras.replace(',', '.'));
 
-        if (isNaN(fuel) || isNaN(kms) || isNaN(extras) || kms <= 0) {
+        if (isNaN(price) || isNaN(total) || isNaN(kms) || isNaN(extras) || kms <= 0 || price <= 0) {
             alert("Por favor, preencha todos os campos da calculadora com valores válidos.");
             return;
         }
 
-        const result = (fuel / kms) + extras;
-        setCalcResult(result);
+        const liters = total / price;
+        const consumption = kms / liters;
+        const fuelCostPerKm = total / kms;
+        const totalCost = fuelCostPerKm + extras;
+        
+        setCalcResult({ totalCost, consumption });
     };
 
     const handleUseCalculatedValue = () => {
         if (calcResult !== null) {
-            setCost(calcResult.toFixed(3).replace('.', ','));
+            setCost(calcResult.totalCost.toFixed(3).replace('.', ','));
             setCalcResult(null); // Clear result after using
         }
     };
@@ -84,8 +90,12 @@ const SettingsView: React.FC<SettingsViewProps> = ({ store, showToast }) => {
                     <h4 className="font-semibold text-white">Calculadora Rápida de Custo</h4>
                     <p className="text-xs text-gray-400">Estime seu custo com base no seu último abastecimento.</p>
                 </div>
+                 <div>
+                    <label htmlFor="calc-fuel-price" className="text-sm text-gray-300 block mb-1">Preço por Litro (R$)</label>
+                    <input id="calc-fuel-price" type="number" value={calcFuelPrice} onChange={e => setCalcFuelPrice(e.target.value)} placeholder="Ex: 5,89" className="w-full bg-night-700/50 text-white p-2 rounded-md border border-night-600" />
+                </div>
                 <div>
-                    <label htmlFor="calc-fuel" className="text-sm text-gray-300 block mb-1">Valor do Abastecimento (R$)</label>
+                    <label htmlFor="calc-fuel" className="text-sm text-gray-300 block mb-1">Valor Total do Abastecimento (R$)</label>
                     <input id="calc-fuel" type="number" value={calcFuel} onChange={e => setCalcFuel(e.target.value)} placeholder="Ex: 250" className="w-full bg-night-700/50 text-white p-2 rounded-md border border-night-600" />
                 </div>
                 <div>
@@ -101,12 +111,19 @@ const SettingsView: React.FC<SettingsViewProps> = ({ store, showToast }) => {
                     Calcular
                 </button>
                 {calcResult !== null && (
-                    <div className="text-center bg-night-900/50 border border-night-700 p-4 rounded-lg mt-4 space-y-2 animate-fade-in-up">
-                        <p className="text-sm text-gray-400">Custo estimado por KM:</p>
-                        <p className="text-3xl font-bold text-brand-green">{calcResult.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 3 })}</p>
-                        <p className="text-xs text-gray-500 pt-1">
-                            {`(${formatCurrency(parseFloat(calcFuel.replace(',', '.')))} / ${calcKms} km) + ${formatCurrency(parseFloat(calcExtras.replace(',', '.')))} (extras)`}
-                        </p>
+                    <div className="text-center bg-night-900/50 border border-night-700 p-4 rounded-lg mt-4 space-y-3 animate-fade-in-up">
+                        <div>
+                            <p className="text-sm text-gray-400">Consumo médio do veículo:</p>
+                            <p className="text-2xl font-bold text-white">{calcResult.consumption.toFixed(2).replace('.', ',')} KM/L</p>
+                        </div>
+                        <div className="border-t border-night-700/50 my-2"></div>
+                        <div>
+                            <p className="text-sm text-gray-400">Custo total estimado por KM:</p>
+                            <p className="text-3xl font-bold text-brand-green">{calcResult.totalCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 3 })}</p>
+                            <p className="text-xs text-gray-500 pt-1">
+                                Baseado no seu abastecimento e custos extras.
+                            </p>
+                        </div>
                         <button onClick={handleUseCalculatedValue} className="!mt-4 w-full bg-gradient-to-r from-brand-blue to-blue-500 text-white font-bold py-2 rounded-md hover:opacity-90 transition text-sm">
                             Usar este Valor
                         </button>

@@ -1,37 +1,67 @@
 import React, { useState, useEffect } from 'react';
 import { CalculatorIcon, HistoryIcon, SparklesIcon, ShareIcon, DotsVerticalIcon, ChevronDownIcon } from '../Icons';
 
+// Interface for the PWA install prompt event, which is not yet a standard TS type.
+interface BeforeInstallPromptEvent extends Event {
+    readonly platforms: string[];
+    readonly userChoice: Promise<{
+        outcome: 'accepted' | 'dismissed';
+        platform: string;
+    }>;
+    prompt(): Promise<void>;
+}
+
 interface LandingPageProps {
     onLaunchApp: () => void;
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ onLaunchApp }) => {
-    const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+    const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
     const [showInstallButton, setShowInstallButton] = useState(false);
     const [openFaq, setOpenFaq] = useState<number | null>(null);
 
     useEffect(() => {
-        window.addEventListener('beforeinstallprompt', (e) => {
+        const handleBeforeInstallPrompt = (e: Event) => {
             e.preventDefault();
-            setDeferredPrompt(e);
+            // Store the event so it can be triggered later.
+            setDeferredPrompt(e as BeforeInstallPromptEvent);
+            // Update the UI to notify the user they can install the PWA
             setShowInstallButton(true);
-        });
+        };
 
-        window.addEventListener('appinstalled', () => {
+        const handleAppInstalled = () => {
+          // Hide the app provided install promotion
           setShowInstallButton(false);
+          // Clear the deferredPrompt so it can be garbage collected
           setDeferredPrompt(null);
           console.log('GanhosPro foi instalado com sucesso!');
-        });
+        };
+        
+        // Listen for the beforeinstallprompt event
+        window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        
+        // Listen for the appinstalled event
+        window.addEventListener('appinstalled', handleAppInstalled);
+
+        // Cleanup the event listeners when the component unmounts
+        return () => {
+            window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+            window.removeEventListener('appinstalled', handleAppInstalled);
+        };
     }, []);
 
     const handleInstallClick = async () => {
         if (!deferredPrompt) {
+            // This fallback is for browsers that do not support the prompt (e.g., iOS Safari)
             alert('Para instalar o aplicativo, use a opção "Adicionar à Tela de Início" no menu do seu navegador.');
             return;
         }
+        // Show the install prompt.
         deferredPrompt.prompt();
+        // Wait for the user to respond to the prompt.
         const { outcome } = await deferredPrompt.userChoice;
         console.log(`User response to the install prompt: ${outcome}`);
+        // We've used the prompt, and can't use it again, clear it.
         setDeferredPrompt(null);
         setShowInstallButton(false);
     };

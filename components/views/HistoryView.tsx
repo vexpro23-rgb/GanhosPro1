@@ -8,7 +8,7 @@ interface HistoryViewProps {
     showToast: (message: string) => void;
 }
 
-// Custom Tooltip Component
+// Custom Tooltip Component for Chart
 const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload, label }) => {
     const formatCurrency = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -29,6 +29,74 @@ const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload
     return null;
 };
 
+// Reusable StatCard component, similar to the one in CalculatorView
+const StatCard: React.FC<{ title: string; value: string; color?: string; isPrimary?: boolean }> = ({ title, value, color = 'text-white', isPrimary = false }) => (
+    <div className={`p-4 rounded-lg shadow-md ${isPrimary ? 'bg-brand-green' : 'bg-night-800/50 border border-night-700'}`}>
+        <p className={`text-sm ${isPrimary ? 'text-white' : 'text-gray-400'}`}>{title}</p>
+        <p className={`text-2xl font-bold ${isPrimary ? 'text-white' : color}`}>{value}</p>
+    </div>
+);
+
+
+// Modal for displaying the day's summary
+const SummaryModal: React.FC<{ 
+    entry: Entry; 
+    vehicleCostPerKm: number;
+    onClose: () => void;
+    onEdit: (entry: Entry) => void;
+    onDelete: (id: string) => void; 
+}> = ({ entry, vehicleCostPerKm, onClose, onEdit, onDelete }) => {
+    const carCost = entry.kmDriven * vehicleCostPerKm;
+    const netProfit = entry.totalEarnings - carCost - entry.additionalCosts;
+    const profitPerKm = entry.kmDriven > 0 ? netProfit / entry.kmDriven : 0;
+    const profitPerHour = entry.hoursWorked > 0 ? netProfit / entry.hoursWorked : null;
+
+    const formatCurrency = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    const handleDelete = () => {
+        if(window.confirm('Tem certeza que deseja apagar este registro?')) {
+            onDelete(entry.id);
+        }
+    }
+
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                onClose();
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [onClose]);
+
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 flex items-center justify-center p-4" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="summary-modal-title">
+            <div className="bg-night-800 border border-night-700 rounded-lg shadow-xl w-full max-w-md p-6 space-y-6 animate-fade-in-up" onClick={e => e.stopPropagation()}>
+                <h2 id="summary-modal-title" className="text-2xl font-bold text-white text-center">Resumo do Dia</h2>
+                <p className="text-center text-gray-400 text-sm -mt-4">{new Date(entry.date).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}</p>
+                <div className="grid grid-cols-2 gap-4">
+                    <StatCard title="Lucro Líquido Real" value={formatCurrency(netProfit)} color={netProfit > 0 ? 'text-green-400' : 'text-red-400'} isPrimary={true}/>
+                    <StatCard title="Lucro por KM" value={`${formatCurrency(profitPerKm)}/km`} />
+                    {profitPerHour !== null && <StatCard title="Lucro por Hora" value={`${formatCurrency(profitPerHour)}/h`} />}
+                    <StatCard title="Ganhos Brutos" value={formatCurrency(entry.totalEarnings)} />
+                    <StatCard title="Custo do Carro" value={formatCurrency(carCost)} color="text-yellow-400" />
+                    <StatCard title="Custos Extras" value={formatCurrency(entry.additionalCosts)} color="text-orange-400" />
+                </div>
+                <div className="flex space-x-2">
+                    <button onClick={() => onEdit(entry)} className="w-full flex items-center justify-center gap-2 bg-night-700 text-white font-bold py-3 rounded-md hover:bg-night-600 transition"><PencilIcon /> Editar</button>
+                    <button onClick={handleDelete} className="w-full flex items-center justify-center gap-2 bg-red-800/50 text-red-400 font-bold py-3 rounded-md hover:bg-red-800/80 transition"><TrashIcon /> Apagar</button>
+                </div>
+                 <button onClick={onClose} className="w-full bg-gradient-to-r from-brand-blue to-blue-500 text-white font-bold py-3 rounded-md hover:opacity-90 transition">
+                    Fechar
+                </button>
+            </div>
+        </div>
+    );
+};
+
+
 const EditModal: React.FC<{ entry: Entry; onSave: (updatedEntry: Entry) => void; onClose: () => void }> = ({ entry, onSave, onClose }) => {
     const [formData, setFormData] = useState(entry);
 
@@ -36,7 +104,6 @@ const EditModal: React.FC<{ entry: Entry; onSave: (updatedEntry: Entry) => void;
         setFormData(entry);
     }, [entry]);
     
-    // Add keyboard listener for 'Escape' key to close the modal
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key === 'Escape') {
@@ -65,7 +132,7 @@ const EditModal: React.FC<{ entry: Entry; onSave: (updatedEntry: Entry) => void;
     ];
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 flex items-center justify-center p-4" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
             <div className="bg-night-800 border border-night-700 rounded-lg shadow-xl w-full max-w-md p-6 space-y-4 animate-fade-in-up" onClick={e => e.stopPropagation()}>
                 <h3 id="edit-modal-title" className="text-xl font-bold text-white text-center">Editar Registro</h3>
                 <p className="text-center text-gray-400 text-sm -mt-2">{new Date(entry.date).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}</p>
@@ -87,17 +154,18 @@ const EditModal: React.FC<{ entry: Entry; onSave: (updatedEntry: Entry) => void;
 const HistoryView: React.FC<HistoryViewProps> = ({ store, showToast }) => {
     const { entries, vehicleCostPerKm, deleteEntry, updateEntry } = store;
     const [editingEntry, setEditingEntry] = useState<Entry | null>(null);
+    const [viewingEntry, setViewingEntry] = useState<Entry | null>(null);
     
     const recentEntries = useMemo(() => {
         const fifteenDaysAgo = new Date();
         fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
         return entries
             .filter(e => new Date(e.date) >= fifteenDaysAgo)
-            .sort((a, b) => new Date(a.id).getTime() - new Date(b.id).getTime()); // Sort by creation time for consistency
+            .sort((a, b) => new Date(a.id).getTime() - new Date(b.id).getTime());
     }, [entries]);
 
     const chartData = useMemo(() => {
-        return recentEntries.slice(-7).map(entry => { // Use slice(-7) to get last 7
+        return recentEntries.slice(-7).map(entry => {
             const carCost = entry.kmDriven * vehicleCostPerKm;
             const netProfit = entry.totalEarnings - carCost - entry.additionalCosts;
             return {
@@ -113,6 +181,16 @@ const HistoryView: React.FC<HistoryViewProps> = ({ store, showToast }) => {
         updateEntry(updatedEntry);
         showToast('Registro atualizado com sucesso!');
         setEditingEntry(null);
+    };
+
+    const handleEditRequest = (entry: Entry) => {
+        setViewingEntry(null);
+        setEditingEntry(entry);
+    };
+
+    const handleDeleteRequest = (id: string) => {
+        deleteEntry(id);
+        setViewingEntry(null);
     };
 
     const formatCurrency = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -152,12 +230,19 @@ const HistoryView: React.FC<HistoryViewProps> = ({ store, showToast }) => {
                 )}
 
                 <div className="space-y-3">
-                    {recentEntries.slice().reverse().map(entry => { // Reverse for display order
+                    {recentEntries.slice().reverse().map(entry => {
                         const carCost = entry.kmDriven * vehicleCostPerKm;
                         const netProfit = entry.totalEarnings - carCost - entry.additionalCosts;
                         
                         return (
-                            <div key={entry.id} className="bg-night-800/50 border border-night-700 p-4 rounded-lg shadow-md flex items-center justify-between">
+                            <div 
+                                key={entry.id}
+                                className="bg-night-800/50 border border-night-700 p-4 rounded-lg shadow-md flex items-center justify-between hover:bg-night-700/70 transition-colors duration-200 cursor-pointer"
+                                onClick={() => setViewingEntry(entry)}
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setViewingEntry(entry)}
+                            >
                                 <div>
                                     <p className="font-bold text-white">{new Date(entry.date).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' })}</p>
                                     <p className={`text-lg font-semibold ${netProfit > 0 ? 'text-green-400' : 'text-red-400'}`}>
@@ -166,28 +251,34 @@ const HistoryView: React.FC<HistoryViewProps> = ({ store, showToast }) => {
                                     <p className="text-xs text-gray-400">
                                         {entry.kmDriven} km • {formatCurrency(entry.totalEarnings)} brutos
                                     </p>
-                                    <p className="text-xs text-gray-400">
-                                        Custos: {formatCurrency(carCost)} (Carro) + {formatCurrency(entry.additionalCosts)} (Extras)
-                                    </p>
                                 </div>
-                                <div className="flex items-center space-x-2">
-                                    <button onClick={() => setEditingEntry(entry)} className="p-2 text-gray-400 hover:text-blue-400 transition-colors" aria-label="Editar registro">
-                                        <PencilIcon />
-                                    </button>
-                                    <button
-                                        onClick={() => { if(window.confirm('Tem certeza que deseja apagar este registro?')) deleteEntry(entry.id) }}
-                                        className="p-2 text-gray-400 hover:text-red-500 transition-colors"
-                                        aria-label="Apagar registro"
-                                    >
-                                        <TrashIcon />
-                                    </button>
+                                <div className="text-right">
+                                     <p className="text-xs text-gray-400">
+                                        Custo Carro: {formatCurrency(carCost)}
+                                    </p>
+                                    <p className="text-xs text-gray-400">
+                                        Extras: {formatCurrency(entry.additionalCosts)}
+                                    </p>
                                 </div>
                             </div>
                         );
                     })}
                 </div>
             </div>
-            {editingEntry && <EditModal entry={editingEntry} onSave={handleSaveEdit} onClose={() => setEditingEntry(null)} />}
+            
+            {viewingEntry && <SummaryModal 
+                entry={viewingEntry} 
+                vehicleCostPerKm={vehicleCostPerKm} 
+                onClose={() => setViewingEntry(null)}
+                onEdit={handleEditRequest}
+                onDelete={handleDeleteRequest}
+            />}
+            
+            {editingEntry && <EditModal 
+                entry={editingEntry} 
+                onSave={handleSaveEdit} 
+                onClose={() => setEditingEntry(null)} 
+            />}
         </>
     );
 };

@@ -20,7 +20,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ items, currentView, setCurrentVie
                 <button
                     key={item.id}
                     onClick={() => setCurrentView(item.id)}
-                    className={`relative flex flex-col items-center justify-center w-full py-2 px-1 text-xs transition-colors duration-300 ease-in-out focus:outline-none ${
+                    className={`relative flex flex-col items-center justify-center w-full py-3 px-1 text-xs transition-colors duration-300 ease-in-out focus:outline-none ${
                         currentView === item.id
                             ? 'text-brand-green'
                             : 'text-gray-400 hover:text-white'
@@ -30,7 +30,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ items, currentView, setCurrentVie
                      {currentView === item.id && (
                         <span className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 w-8 bg-brand-green rounded-full transition-all"></span>
                     )}
-                    <div className={`w-6 h-6 mb-1 transition-transform duration-300 ease-in-out ${currentView === item.id ? 'scale-110' : 'scale-100'}`}>{item.icon}</div>
+                    <div className={`w-7 h-7 mb-1 transition-transform duration-300 ease-in-out ${currentView === item.id ? 'scale-110' : 'scale-100'}`}>{item.icon}</div>
                     <span className="font-semibold">{item.label}</span>
                 </button>
             ))}

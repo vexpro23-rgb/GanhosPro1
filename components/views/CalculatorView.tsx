@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, KeyboardEvent } from 'react';
 import type { GanhosProStore, CalculatedMetrics, Entry } from '../../types';
 
 interface CalculatorViewProps {
@@ -18,8 +18,9 @@ const CalculatorView: React.FC<CalculatorViewProps> = ({ store, showToast }) => 
     const [kms, setKms] = useState('');
     const [hours, setHours] = useState('');
     const [costs, setCosts] = useState('');
-
     const [results, setResults] = useState<CalculatedMetrics | null>(null);
+    
+    const formRef = useRef<HTMLDivElement>(null);
 
     const calculateMetrics = () => {
         const totalEarnings = parseFloat(earnings) || 0;
@@ -66,6 +67,27 @@ const CalculatorView: React.FC<CalculatorViewProps> = ({ store, showToast }) => 
         setResults(null);
     };
 
+    const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            
+            if (!formRef.current) return;
+
+            const inputs = Array.from(
+                formRef.current.querySelectorAll<HTMLInputElement>('input[type="number"]')
+            );
+            const currentIndex = inputs.indexOf(event.currentTarget);
+            const nextIndex = currentIndex + 1;
+
+            if (nextIndex < inputs.length) {
+                inputs[nextIndex].focus();
+            } else {
+                // We're at the last input, so trigger calculation
+                calculateMetrics();
+            }
+        }
+    };
+
     const formatCurrency = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     const formatNumber = (value: number) => value.toFixed(2).replace('.', ',');
 
@@ -81,7 +103,7 @@ const CalculatorView: React.FC<CalculatorViewProps> = ({ store, showToast }) => 
             {!results ? (
               <>
                 <h2 className="text-2xl font-bold text-white text-center">Calcular Ganhos do Dia</h2>
-                <div className="bg-night-800/50 border border-night-700 p-6 rounded-lg shadow-xl space-y-4">
+                <div ref={formRef} className="bg-night-800/50 border border-night-700 p-6 rounded-lg shadow-xl space-y-4">
                   {formFields.map(field => (
                     <div key={field.id}>
                         <label htmlFor={field.id} className="block text-sm font-medium text-gray-300 mb-1">{field.label}</label>
@@ -90,6 +112,7 @@ const CalculatorView: React.FC<CalculatorViewProps> = ({ store, showToast }) => 
                             type="number"
                             value={field.value}
                             onChange={(e) => field.setter(e.target.value)}
+                            onKeyDown={handleKeyDown}
                             placeholder={field.placeholder}
                             className="w-full bg-night-700/50 text-white p-3 rounded-md border border-night-600 focus:ring-2 focus:ring-brand-green focus:border-transparent outline-none transition"
                         />

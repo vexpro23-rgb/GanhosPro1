@@ -203,12 +203,12 @@ const PerformanceOptimizer: React.FC<PerformanceOptimizerProps> = ({ store, Rend
     };
     
     return (
-        <div className="bg-night-800/50 backdrop-blur-lg border border-night-700 p-6 rounded-lg shadow-xl space-y-6">
+        <div className="space-y-6">
             <div className="flex justify-center bg-night-900/60 p-1 rounded-full">
-                <button onClick={() => { setPeriodType('week'); setCurrentDate(new Date()); setAiInsights(''); setError('') }} className={`w-full py-2 px-3 text-sm font-semibold rounded-full transition-colors ${ periodType === 'week' ? 'bg-brand-blue text-white shadow' : 'text-gray-300 hover:bg-night-700/50' }`}>
+                <button onClick={() => { setPeriodType('week'); setCurrentDate(new Date()); setAiInsights(''); setError('') }} className={`w-full py-2.5 px-4 text-sm font-semibold rounded-full transition-colors ${ periodType === 'week' ? 'bg-brand-blue text-white shadow' : 'text-gray-300 hover:bg-night-700/50' }`}>
                     Semanal
                 </button>
-                <button onClick={() => { setPeriodType('month'); setCurrentDate(new Date()); setAiInsights(''); setError('') }} className={`w-full py-2 px-3 text-sm font-semibold rounded-full transition-colors ${ periodType === 'month' ? 'bg-brand-blue text-white shadow' : 'text-gray-300 hover:bg-night-700/50' }`}>
+                <button onClick={() => { setPeriodType('month'); setCurrentDate(new Date()); setAiInsights(''); setError('') }} className={`w-full py-2.5 px-4 text-sm font-semibold rounded-full transition-colors ${ periodType === 'month' ? 'bg-brand-blue text-white shadow' : 'text-gray-300 hover:bg-night-700/50' }`}>
                     Mensal
                 </button>
             </div>

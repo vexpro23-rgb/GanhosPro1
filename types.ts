@@ -28,3 +28,11 @@ export interface GanhosProStore {
     setVehicleCostPerKm: (cost: number) => void;
     replaceAllEntries: (newEntries: Entry[]) => void;
 }
+
+// Augment the global Window interface for PDF generation libraries
+declare global {
+  interface Window {
+    jspdf: any;
+    html2canvas: any;
+  }
+}

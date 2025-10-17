@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { GoogleGenAI } from "@google/genai";
-import { SparklesIcon, CloudArrowUpIcon, DocumentChartBarIcon, ArrowDownTrayIcon, CalendarDaysIcon, ChartPieIcon, InformationCircleIcon } from '../Icons.tsx';
+import { SparklesIcon, CloudArrowUpIcon, DocumentChartBarIcon, ArrowDownTrayIcon, CalendarDaysIcon, ChartPieIcon, InformationCircleIcon, ChevronLeftIcon } from '../Icons.tsx';
 import type { GanhosProStore } from '../../types.ts';
 import GeneralReport from './GeneralReport.tsx';
 import DayOfWeekAnalysis from './DayOfWeekAnalysis.tsx';
@@ -37,7 +37,7 @@ const RenderInsights: React.FC<{ text: string }> = ({ text }) => {
 
 
 const PremiumView: React.FC<PremiumViewProps> = ({ store }) => {
-    const [activeTool, setActiveTool] = useState<ActiveTool>('performance-analysis');
+    const [selectedTool, setSelectedTool] = useState<ActiveTool | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [insights, setInsights] = useState<string>('');
     const [error, setError] = useState<string>('');
@@ -68,7 +68,6 @@ const PremiumView: React.FC<PremiumViewProps> = ({ store }) => {
         setInsights('');
 
         const dataSummary = filteredEntries.slice(0, 45).map(e => { // limit to 45 to keep prompt reasonable
-            // FIX: Corrected typo from toLocaleDateTimeString to toLocaleDateString
             const date = new Date(e.date).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' });
             const netProfit = e.totalEarnings - (e.kmDriven * store.vehicleCostPerKm) - e.additionalCosts;
             return `Data: ${date}, Lucro Líquido: R$${netProfit.toFixed(2)}, KM Rodados: ${e.kmDriven}, Horas: ${e.hoursWorked}`;
@@ -200,33 +199,33 @@ const PremiumView: React.FC<PremiumViewProps> = ({ store }) => {
     const tools: { id: ActiveTool; title: string; description: string; icon: React.ReactNode; }[] = [
         { 
             id: 'performance-analysis', 
-            title: 'Performance',
-            description: 'Compare semanas/meses e obtenha relatórios detalhados.', 
-            icon: <ChartPieIcon />
-        },
-        { 
-            id: 'ai-insights', 
-            title: 'Insights IA', 
-            description: 'Receba análises personalizadas por período.', 
-            icon: <SparklesIcon />
+            title: 'Análise de Performance',
+            description: 'Compare períodos e receba insights de IA para otimizar seus ganhos.', 
+            icon: <DocumentChartBarIcon />
         },
         { 
             id: 'report', 
-            title: 'Relatório', 
-            description: 'Visualize a evolução dos seus lucros.', 
-            icon: <DocumentChartBarIcon /> 
+            title: 'Relatório Geral de Ganhos', 
+            description: 'Visualize a tendência dos seus lucros ao longo do tempo.', 
+            icon: <ChartPieIcon /> 
         },
         { 
             id: 'day-of-week-analysis', 
-            title: 'Dias', 
-            description: 'Descubra seus dias mais lucrativos.', 
+            title: 'Análise por Dia da Semana', 
+            description: 'Descubra seus dias e horários mais lucrativos e eficientes.', 
             icon: <CalendarDaysIcon /> 
         },
         { 
+            id: 'ai-insights', 
+            title: 'Insights Rápidos com IA', 
+            description: 'Receba uma análise pontual sobre um período específico.', 
+            icon: <SparklesIcon /> 
+        },
+        { 
             id: 'data-tools', 
-            title: 'Dados', 
-            description: 'Faça backup, restaure ou exporte seu histórico.', 
-            icon: <CloudArrowUpIcon /> 
+            title: 'Backup e Exportação', 
+            description: 'Faça backup, restaure ou exporte seu histórico completo.', 
+            icon: <ArrowDownTrayIcon /> 
         },
     ];
 
@@ -236,24 +235,14 @@ const PremiumView: React.FC<PremiumViewProps> = ({ store }) => {
         { id: 'all', label: 'Todo o Período' }
     ];
 
-    const renderActiveTool = () => {
-        switch (activeTool) {
+    const renderSelectedTool = () => {
+        switch (selectedTool) {
             case 'performance-analysis':
-                return (
-                    <div>
-                        <h3 className="text-xl font-semibold text-white text-center flex items-center justify-center gap-2 mb-4">
-                           <ChartPieIcon /> Análise de Performance com IA
-                       </h3>
-                       <PerformanceOptimizer store={store} RenderInsightsComponent={RenderInsights} />
-                   </div>
-                );
+                return <PerformanceOptimizer store={store} RenderInsightsComponent={RenderInsights} />;
             case 'ai-insights':
                 return (
-                    <div className="bg-night-800/50 backdrop-blur-lg border border-night-700 p-6 rounded-lg shadow-xl space-y-4">
+                    <div className="space-y-4">
                         <div className="relative flex justify-center items-center group">
-                            <h3 className="text-xl font-semibold text-white flex items-center gap-2">
-                                <SparklesIcon /> Insights com IA
-                            </h3>
                             <div className="ml-2 text-gray-400 cursor-help">
                                 <InformationCircleIcon />
                             </div>
@@ -264,7 +253,7 @@ const PremiumView: React.FC<PremiumViewProps> = ({ store }) => {
                         </div>
                          <div className="flex justify-center bg-night-900/60 p-1 rounded-full my-4">
                             {dateRangeTabs.map(tab => (
-                                <button key={tab.id} onClick={() => setAiDateRange(tab.id)} className={`w-full py-1.5 px-2 text-xs font-semibold rounded-full transition-colors ${ aiDateRange === tab.id ? 'bg-brand-blue text-white shadow' : 'text-gray-300 hover:bg-night-700/50' }`}>
+                                <button key={tab.id} onClick={() => setAiDateRange(tab.id)} className={`w-full py-2 px-3 text-sm font-semibold rounded-full transition-colors ${ aiDateRange === tab.id ? 'bg-brand-blue text-white shadow' : 'text-gray-300 hover:bg-night-700/50' }`}>
                                     {tab.label}
                                 </button>
                             ))}
@@ -292,41 +281,26 @@ const PremiumView: React.FC<PremiumViewProps> = ({ store }) => {
                     </div>
                 );
             case 'report':
-                 return (
-                     <div className="bg-night-800/50 backdrop-blur-lg border border-night-700 p-6 rounded-lg shadow-xl space-y-4">
-                         <h3 className="text-xl font-semibold text-white text-center flex items-center justify-center gap-2">
-                            <DocumentChartBarIcon /> Relatório Geral de Tendências
-                        </h3>
-                        <GeneralReport store={store} />
-                    </div>
-                );
+                 return <GeneralReport store={store} />;
             case 'day-of-week-analysis':
-                return (
-                     <div className="bg-night-800/50 backdrop-blur-lg border border-night-700 p-6 rounded-lg shadow-xl space-y-4">
-                         <h3 className="text-xl font-semibold text-white text-center flex items-center justify-center gap-2">
-                            <CalendarDaysIcon /> Análise por Dia da Semana
-                        </h3>
-                        <DayOfWeekAnalysis store={store} />
-                    </div>
-                );
+                return <DayOfWeekAnalysis store={store} />;
             case 'data-tools':
                 return (
-                     <div className="bg-night-800/50 backdrop-blur-lg border border-night-700 p-6 rounded-lg shadow-xl space-y-6">
-                        <h3 className="text-xl font-semibold text-white text-center">Ferramentas de Dados</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                           <div className="bg-night-900/40 rounded-lg border border-night-700/60 p-4 flex flex-col items-center text-center">
-                                <div className="flex-shrink-0 w-10 h-10 text-brand-blue mb-2"><CloudArrowUpIcon/></div>
-                                <h4 className="font-bold text-white">Backup e Restauração</h4>
-                                <p className="text-sm text-gray-400 mt-1 mb-3 flex-grow">Salve ou restaure todos os seus dados usando um arquivo local.</p>
+                     <div className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                           <div className="bg-night-900/40 rounded-lg border border-night-700/60 p-6 flex flex-col items-center text-center">
+                                <div className="flex-shrink-0 w-12 h-12 text-brand-blue mb-3"><CloudArrowUpIcon/></div>
+                                <h4 className="font-bold text-white text-lg">Backup e Restauração</h4>
+                                <p className="text-sm text-gray-400 mt-1 mb-4 flex-grow">Salve ou restaure todos os seus dados usando um arquivo local.</p>
                                 <div className="flex gap-2 w-full">
                                    <button onClick={() => handleExport('json')} className="w-full bg-brand-blue/80 text-white font-semibold py-2 rounded-md hover:bg-brand-blue transition text-sm">Backup</button>
                                    <button onClick={handleImportJSON} className="w-full bg-night-700 text-white font-semibold py-2 rounded-md hover:bg-night-600 transition text-sm">Restaurar</button>
                                 </div>
                            </div>
-                           <div className="bg-night-900/40 rounded-lg border border-night-700/60 p-4 flex flex-col items-center text-center">
-                                <div className="flex-shrink-0 w-10 h-10 text-brand-green mb-2"><ArrowDownTrayIcon/></div>
-                                <h4 className="font-bold text-white">Exportar para Planilha</h4>
-                                <p className="text-sm text-gray-400 mt-1 mb-3 flex-grow">Exporte seu histórico para um arquivo CSV para análise avançada.</p>
+                           <div className="bg-night-900/40 rounded-lg border border-night-700/60 p-6 flex flex-col items-center text-center">
+                                <div className="flex-shrink-0 w-12 h-12 text-brand-green mb-3"><ArrowDownTrayIcon/></div>
+                                <h4 className="font-bold text-white text-lg">Exportar para Planilha</h4>
+                                <p className="text-sm text-gray-400 mt-1 mb-4 flex-grow">Exporte seu histórico para um arquivo CSV para análise avançada.</p>
                                  <button onClick={() => handleExport('csv')} className="w-full bg-brand-green/80 text-white font-semibold py-2 rounded-md hover:bg-brand-green transition text-sm">Exportar CSV</button>
                            </div>
                         </div>
@@ -337,48 +311,70 @@ const PremiumView: React.FC<PremiumViewProps> = ({ store }) => {
         }
     };
     
-    return (
-        <div className="space-y-6">
-            <div className="text-center">
-                 <div className="relative w-16 h-16 mx-auto text-yellow-400">
-                    <div className="absolute inset-0 bg-yellow-400/30 rounded-full blur-xl animate-pulse"></div>
-                    <SparklesIcon />
-                </div>
-                <h2 className="text-3xl font-extrabold text-white mt-2">Desbloqueie o Potencial Máximo</h2>
-                <p className="text-gray-300 mt-2">Leve seu controle financeiro para o próximo nível com GanhosPro Premium.</p>
-            </div>
+    const getToolById = (id: ActiveTool) => tools.find(t => t.id === id);
 
-            <div className="bg-night-800/50 border border-night-700 rounded-xl p-2 shadow-lg">
-                <div className="flex justify-around items-center space-x-1">
+    // Main Menu View
+    if (!selectedTool) {
+        return (
+            <div className="space-y-6">
+                <div className="text-center">
+                    <div className="relative w-16 h-16 mx-auto text-yellow-400">
+                        <div className="absolute inset-0 bg-yellow-400/30 rounded-full blur-xl animate-pulse"></div>
+                        <SparklesIcon />
+                    </div>
+                    <h2 className="text-3xl font-extrabold text-white mt-2">Desbloqueie o Potencial Máximo</h2>
+                    <p className="text-gray-300 mt-2 max-w-md mx-auto">Selecione uma ferramenta para levar seu controle financeiro para o próximo nível.</p>
+                </div>
+                <div className="space-y-4 pt-4">
                     {tools.map(tool => (
-                        <button
-                            key={tool.id}
-                            onClick={() => setActiveTool(tool.id)}
-                            className={`flex-1 p-2 rounded-lg transition-all duration-300 ease-in-out focus:outline-none ${
-                                activeTool === tool.id
-                                    ? 'bg-brand-blue/90 shadow-md'
-                                    : 'bg-transparent hover:bg-night-700/50'
-                            }`}
-                            aria-current={activeTool === tool.id ? 'page' : undefined}
-                            title={tool.title}
+                        <button 
+                            key={tool.id} 
+                            onClick={() => setSelectedTool(tool.id)} 
+                            className="w-full bg-night-800/50 border border-night-700 p-4 rounded-lg flex items-center gap-4 text-left hover:bg-night-700/70 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue"
                         >
-                            <div className={`w-7 h-7 mx-auto transition-colors ${ activeTool === tool.id ? 'text-white' : 'text-gray-300'}`}>{tool.icon}</div>
-                            <span className={`block text-xs font-semibold mt-1 transition-colors ${ activeTool === tool.id ? 'text-white' : 'text-gray-400'}`}>
-                                {tool.title}
-                            </span>
+                            <div className="flex-shrink-0 w-10 h-10 text-brand-green bg-night-900/50 p-2 rounded-lg">{tool.icon}</div>
+                            <div>
+                                <h3 className="font-bold text-white text-base">{tool.title}</h3>
+                                <p className="text-gray-400 text-sm">{tool.description}</p>
+                            </div>
                         </button>
                     ))}
                 </div>
+                <div className="text-center mt-8">
+                    <button className="w-full max-w-sm bg-gradient-to-r from-yellow-400 to-amber-500 text-night-900 font-bold py-3 rounded-md text-base hover:opacity-90 transition-all transform hover:scale-105 shadow-lg shadow-yellow-500/20">
+                        Apoie o Desenvolvedor
+                    </button>
+                </div>
             </div>
-            
-            <div className="animate-fade-in-up">
-                {renderActiveTool()}
-            </div>
+        );
+    }
+    
+    const currentTool = getToolById(selectedTool);
 
-            <div className="text-center mt-8">
-                <button className="w-full max-w-sm bg-gradient-to-r from-yellow-400 to-amber-500 text-night-900 font-bold py-3 rounded-md text-base hover:opacity-90 transition-all transform hover:scale-105 shadow-lg shadow-yellow-500/20">
-                    Apoie o Desenvolvedor
-                </button>
+    // Individual Tool View
+    return (
+        <div className="animate-fade-in-up">
+            <div className="bg-night-800/50 backdrop-blur-lg border border-night-700 p-4 sm:p-6 rounded-lg shadow-xl">
+                 <div className="flex items-center gap-3">
+                    <button 
+                        onClick={() => setSelectedTool(null)} 
+                        className="flex-shrink-0 p-2 text-gray-300 hover:text-white transition-colors rounded-full hover:bg-night-700/50 -ml-2"
+                        aria-label="Voltar"
+                    >
+                        <ChevronLeftIcon className="w-6 h-6" />
+                    </button>
+                    <div className="flex items-center gap-3 overflow-hidden">
+                        <div className="flex-shrink-0 w-8 h-8 text-brand-green">{currentTool?.icon}</div>
+                        <div className="overflow-hidden">
+                            <h2 className="text-xl font-bold text-white truncate">{currentTool?.title}</h2>
+                            <p className="text-xs text-gray-400 -mt-1 truncate">{currentTool?.description}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr className="border-night-700 my-4" />
+
+                {renderSelectedTool()}
             </div>
         </div>
     );

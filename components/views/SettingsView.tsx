@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import type { GanhosProStore } from '../../types';
-import { InformationCircleIcon } from '../Icons';
+import type { GanhosProStore } from '../../types.ts';
+import { InformationCircleIcon } from '../Icons.tsx';
 
 interface SettingsViewProps {
     store: GanhosProStore;

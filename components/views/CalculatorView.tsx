@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, KeyboardEvent } from 'react';
-import type { GanhosProStore, CalculatedMetrics, Entry } from '../../types';
+import type { GanhosProStore, CalculatedMetrics, Entry } from '../../types.ts';
 
 interface CalculatorViewProps {
     store: GanhosProStore;

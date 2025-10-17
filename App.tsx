@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import BottomNav from './components/BottomNav';
-import CalculatorView from './components/views/CalculatorView';
-import HistoryView from './components/views/HistoryView';
-import SettingsView from './components/views/SettingsView';
-import PremiumView from './components/views/PremiumView';
-import Toast from './components/Toast';
-import { useGanhosProStore } from './hooks/useGanhosProStore';
-import type { View } from './types';
-import { CalculatorIcon, HistoryIcon, PremiumIcon, SettingsIcon } from './components/Icons';
-import LandingPage from './components/views/LandingPage';
+import BottomNav from './components/BottomNav.tsx';
+import CalculatorView from './components/views/CalculatorView.tsx';
+import HistoryView from './components/views/HistoryView.tsx';
+import SettingsView from './components/views/SettingsView.tsx';
+import PremiumView from './components/views/PremiumView.tsx';
+import Toast from './components/Toast.tsx';
+import { useGanhosProStore } from './hooks/useGanhosProStore.ts';
+import type { View } from './types.ts';
+import { CalculatorIcon, HistoryIcon, PremiumIcon, SettingsIcon } from './components/Icons.tsx';
+import LandingPage from './components/views/LandingPage.tsx';
 
 const App: React.FC = () => {
     const [appLaunched, setAppLaunched] = useState(false);

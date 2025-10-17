@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, TooltipProps } from 'recharts';
-import type { GanhosProStore, Entry } from '../../types';
-import { TrashIcon, PencilIcon } from '../Icons';
+import type { GanhosProStore, Entry } from '../../types.ts';
+import { TrashIcon, PencilIcon } from '../Icons.tsx';
 
 interface HistoryViewProps {
     store: GanhosProStore;

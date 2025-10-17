@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { CheckCircleIcon } from './Icons';
+import { CheckCircleIcon } from './Icons.tsx';
 
 interface ToastProps {
     message: string;

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { CheckCircleIcon, LockClosedIcon, SparklesIcon, CloudArrowUpIcon, DocumentChartBarIcon, ArrowDownTrayIcon } from '../Icons';
-import type { GanhosProStore } from '../../types';
+import { CheckCircleIcon, LockClosedIcon, SparklesIcon, CloudArrowUpIcon, DocumentChartBarIcon, ArrowDownTrayIcon } from '../Icons.tsx';
+import type { GanhosProStore } from '../../types.ts';
 
 interface PremiumViewProps {
     store: GanhosProStore;

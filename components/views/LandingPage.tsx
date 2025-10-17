@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CalculatorIcon, HistoryIcon, SparklesIcon, ShareIcon, DotsVerticalIcon, ChevronDownIcon } from '../Icons';
+import { CalculatorIcon, HistoryIcon, SparklesIcon, ShareIcon, DotsVerticalIcon, ChevronDownIcon } from '../Icons.tsx';
 
 // Interface for the PWA install prompt event, which is not yet a standard TS type.
 interface BeforeInstallPromptEvent extends Event {

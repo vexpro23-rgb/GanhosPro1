@@ -1,6 +1,5 @@
-
 import { useState, useEffect, useCallback } from 'react';
-import type { Entry, GanhosProStore } from '../types';
+import type { Entry, GanhosProStore } from '../types.ts';
 
 const GANHOSPRO_ENTRIES_KEY = 'ganhospro_entries';
 const GANHOSPRO_COST_KEY = 'ganhospro_cost_per_km';
